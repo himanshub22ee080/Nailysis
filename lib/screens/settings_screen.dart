@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Nailysis/providers/theme_provider.dart';
 import 'package:Nailysis/providers/patient_provider.dart';
+import 'package:Nailysis/providers/app_state_provider.dart';
 import 'package:Nailysis/widgets/medical_card.dart';
 import 'package:Nailysis/theme/app_theme.dart';
 
@@ -179,6 +180,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             
             const SizedBox(height: 24),
             
+            // Developer Options Section
+            _buildSectionHeader('Developer Options'),
+            MedicalCard(
+              child: Column(
+                children: [
+                  Consumer<AppStateProvider>(
+                    builder: (context, appState, child) {
+                      return _buildSwitchTile(
+                        icon: Icons.science_outlined,
+                        title: 'Research Mode',
+                        subtitle: 'Enable video capture for datasets',
+                        value: appState.isResearchMode,
+                        onChanged: (value) {
+                          appState.setResearchMode(value);
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             // Support & About
             _buildSectionHeader('Support & About'),
             MedicalCard(

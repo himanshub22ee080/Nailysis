@@ -19,26 +19,19 @@ class PatientsScreen extends StatelessWidget {
         final patient = patientProvider.currentPatient;
         final measurements = appState.measurementHistory;
 
-        if (patient == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.go('/home');
-          });
-          return const Scaffold();
-        }
-
         return Scaffold(
           appBar: AppBar(
-            title: const Column(
+            title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'My Measurements',
-                  style: TextStyle(
+                  patient != null ? 'My Measurements' : 'Session History',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                Text(
+                const Text(
                   'Track your health over time',
                   style: TextStyle(
                     fontSize: 14,
@@ -49,7 +42,13 @@ class PatientsScreen extends StatelessWidget {
               ],
             ),
             leading: IconButton(
-              onPressed: () => context.go('/home'),
+              onPressed: () {
+                if (patientProvider.isAuthenticated) {
+                  context.go('/home');
+                } else {
+                  context.go('/login');
+                }
+              },
               icon: const Icon(Icons.arrow_back),
             ),
           ),

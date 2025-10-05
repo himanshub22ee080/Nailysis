@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:Nailysis/providers/app_state_provider.dart';
 import 'package:Nailysis/widgets/medical_card.dart';
+import 'package:Nailysis/providers/patient_provider.dart';
 import 'package:Nailysis/models/measurement_result.dart';
 import 'package:uuid/uuid.dart';
 import 'package:Nailysis/theme/app_theme.dart';
@@ -95,6 +96,9 @@ class _GuidedCaptureScreenState extends State<GuidedCaptureScreen>
   }
 
   void _generateResult() {
+    final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+    final patientId = patientProvider.currentPatient?.id ?? 'guest-patient';
+
     // Generate a realistic hemoglobin value
     final random = Random();
     final hemoglobin = 11.2 + (random.nextDouble() * 2); // 11.2 - 13.2 range
@@ -103,7 +107,7 @@ class _GuidedCaptureScreenState extends State<GuidedCaptureScreen>
       id: const Uuid().v4(),
       hemoglobin: hemoglobin,
       timestamp: DateTime.now(),
-      patientId: 'current-patient',
+      patientId: patientId,
     );
 
     // Save to app state
@@ -122,6 +126,15 @@ class _GuidedCaptureScreenState extends State<GuidedCaptureScreen>
       _timer = 0;
       _progress = 0.0;
     });
+  }
+
+  void _navigateBack(BuildContext context) {
+    final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+    if (patientProvider.isAuthenticated) {
+      context.go('/home');
+    } else {
+      context.go('/login');
+    }
   }
 
   @override
@@ -149,7 +162,7 @@ class _GuidedCaptureScreenState extends State<GuidedCaptureScreen>
           ],
         ),
         leading: IconButton(
-          onPressed: () => context.go('/home'),
+          onPressed: () => _navigateBack(context),
           icon: const Icon(Icons.arrow_back),
         ),
       ),
@@ -497,7 +510,7 @@ class _GuidedCaptureScreenState extends State<GuidedCaptureScreen>
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: () => context.go('/home'),
+              onPressed: () => _navigateBack(context),
               child: const Text('Cancel'),
               style: TextButton.styleFrom(
                 minimumSize: const Size(0, 48),

@@ -18,9 +18,13 @@ class ResultsScreen extends StatelessWidget {
         final result = appState.currentMeasurement;
         final patient = patientProvider.currentPatient;
 
-        if (result == null || patient == null) {
+        if (result == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.go('/home');
+            if (patientProvider.isAuthenticated) {
+              context.go('/home');
+            } else {
+              context.go('/login');
+            }
           });
           return const Scaffold();
         }
@@ -43,10 +47,11 @@ class ResultsScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // Patient Info
-                _buildPatientInfoCard(patient),
-
-                const SizedBox(height: 24),
+                if (patient != null) ...[
+                  // Patient Info
+                  _buildPatientInfoCard(patient),
+                  const SizedBox(height: 24),
+                ],
 
                 // Interpretation
                 _buildInterpretationCard(result),
@@ -302,7 +307,12 @@ class ResultsScreen extends StatelessWidget {
       appState.addMeasurement(measurement);
       appState.clearCurrentMeasurement();
     }
-    context.go('/home');
+    final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+    if (patientProvider.isAuthenticated) {
+      context.go('/home');
+    } else {
+      context.go('/login');
+    }
   }
 
   Color _getColorForStatus(MeasurementStatus status) {

@@ -10,6 +10,7 @@ import 'package:Nailysis/screens/results_screen.dart';
 import 'package:Nailysis/screens/patients_screen.dart';
 import 'package:Nailysis/screens/settings_screen.dart';
 import 'package:Nailysis/screens/user_profile_screen.dart';
+import 'package:Nailysis/screens/research_capture_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -44,6 +45,11 @@ class AppRouter {
             path: 'capture',
             name: 'capture',
             builder: (context, state) => const GuidedCaptureScreen(),
+          ),
+          GoRoute(
+            path: 'research_capture',
+            name: 'research_capture',
+            builder: (context, state) => const ResearchCaptureScreen(),
           ),
           GoRoute(
             path: 'results',

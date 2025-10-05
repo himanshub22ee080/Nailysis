@@ -13,6 +13,32 @@ import 'package:google_fonts/google_fonts.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Sign Out'),
+          content: const Text('Are you sure you want to sign out?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                Provider.of<PatientProvider>(context, listen: false).logout();
+                context.go('/login');
+              },
+              child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<AppStateProvider, PatientProvider>(
@@ -67,13 +93,22 @@ class HomeScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                IconButton(
-                                  onPressed: () => context.go('/home/settings'),
-                                  icon: const Icon(
-                                    Icons.settings,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      onPressed: () => context.go('/home/settings'),
+                                      icon: const Icon(
+                                        Icons.settings,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () => _showLogoutDialog(context),
+                                      icon: const Icon(Icons.logout,
+                                          color: Colors.white, size: 24),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -208,7 +243,13 @@ class HomeScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () => context.go('/home/capture'),
+                          onPressed: () {
+                            if (appState.isResearchMode) {
+                              context.go('/home/research_capture');
+                            } else {
+                              context.go('/home/capture');
+                            }
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryTeal,
                             foregroundColor: Colors.white,
@@ -243,18 +284,20 @@ class HomeScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'New Measurement',
-                                    style: TextStyle(
+                                    appState.isResearchMode
+                                        ? 'Record Research Video'
+                                        : 'New Measurement',
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  Text(
+                                  const Text(
                                     'Start screening',
                                     style: TextStyle(
                                       fontSize: 14,

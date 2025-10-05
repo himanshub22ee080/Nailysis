@@ -31,8 +31,10 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -45,11 +47,11 @@ class LoginScreen extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(40),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Theme.of(context).shadowColor.withOpacity(0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -57,7 +59,7 @@ class LoginScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: Image.asset(
-                    'assets/images/nailysis_logo.png',
+                    'assets/images/nailysis_logo.jpg',
                     width: 48,
                     height: 48,
                     errorBuilder: (context, error, stackTrace) {
@@ -77,7 +79,7 @@ class LoginScreen extends StatelessWidget {
               const Text(
                 'Nailysis',
                 style: TextStyle(
-                  color: Color(0xFF1A237E),
+                  color: AppTheme.primaryTeal,
                   fontSize: 28,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 1.0,
@@ -88,11 +90,13 @@ class LoginScreen extends StatelessWidget {
 
               // Feature cards
               Expanded(
-                child: Column(
+                child: ListView(
                   children: [
                     _buildFeatureCard(
+                      context: context,
+                      isDark: isDark,
                       icon: Icons.favorite_outline,
-                      iconColor: const Color(0xFF00897B),
+                      iconColor: AppTheme.secondaryTeal,
                       backgroundColor: const Color(0xFFE0F2F1),
                       title: 'Non-invasive Testing',
                       subtitle:
@@ -100,6 +104,8 @@ class LoginScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureCard(
+                      context: context,
+                      isDark: isDark,
                       icon: Icons.flash_on_outlined,
                       iconColor: const Color(0xFF1976D2),
                       backgroundColor: const Color(0xFFE3F2FD),
@@ -109,6 +115,8 @@ class LoginScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureCard(
+                      context: context,
+                      isDark: isDark,
                       icon: Icons.shield_outlined,
                       iconColor: const Color(0xFF7B1FA2),
                       backgroundColor: const Color(0xFFF3E5F5),
@@ -128,8 +136,8 @@ class LoginScreen extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () => _handleLogin(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2196F3),
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -153,9 +161,11 @@ class LoginScreen extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => _handleSignUp(context),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE3F2FD),
-                    foregroundColor: const Color(0xFF1976D2),
-                    side: BorderSide.none,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primaryContainer,
+                    foregroundColor:
+                        Theme.of(context).colorScheme.onPrimaryContainer,
+                    side: const BorderSide(color: Colors.transparent),
                     minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -163,6 +173,30 @@ class LoginScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'Sign Up',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => context.go('/home/capture'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.normalTriage,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Try an Instant Test',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -178,6 +212,8 @@ class LoginScreen extends StatelessWidget {
   }
 
   Widget _buildFeatureCard({
+    required BuildContext context,
+    required bool isDark,
     required IconData icon,
     required Color iconColor,
     required Color backgroundColor,
@@ -197,7 +233,7 @@ class LoginScreen extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: backgroundColor,
+                color: isDark ? iconColor.withOpacity(0.2) : backgroundColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -213,8 +249,8 @@ class LoginScreen extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Color(0xFF1A237E),
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.titleMedium?.color,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -222,8 +258,8 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF666666),
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontSize: 14,
                       height: 1.3,
                     ),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:Nailysis/models/measurement_result.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppStateProvider extends ChangeNotifier {
   bool _isConnected = true;
   DateTime? _lastSync;
   MeasurementResult? _currentMeasurement;
   List<MeasurementResult> _measurementHistory = [];
+  bool _isResearchMode = false;
 
   bool get isConnected => _isConnected;
   DateTime? get lastSync => _lastSync;
@@ -14,10 +16,12 @@ class AppStateProvider extends ChangeNotifier {
       List.unmodifiable(_measurementHistory);
   List<MeasurementResult> get recentMeasurements =>
       _measurementHistory.take(3).toList();
+  bool get isResearchMode => _isResearchMode;
 
   AppStateProvider() {
     _lastSync = DateTime.now().subtract(const Duration(minutes: 30));
     _simulateNetworkChanges();
+    _loadResearchMode();
   }
 
   void setConnected(bool connected) {
@@ -80,5 +84,30 @@ class AppStateProvider extends ChangeNotifier {
   void dispose() {
     mounted = false;
     super.dispose();
+  }
+
+  Future<void> setResearchMode(bool isEnabled) async {
+    _isResearchMode = isEnabled;
+    await _saveResearchMode();
+    notifyListeners();
+  }
+
+  Future<void> _loadResearchMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _isResearchMode = prefs.getBool('isResearchMode') ?? false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading research mode: $e');
+    }
+  }
+
+  Future<void> _saveResearchMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isResearchMode', _isResearchMode);
+    } catch (e) {
+      debugPrint('Error saving research mode: $e');
+    }
   }
 }
