@@ -80,4 +80,36 @@ class PatientData {
       emergencyContact: json['emergencyContact'],
     );
   }
+
+  // Convert from Supabase row (uses snake_case column names)
+  factory PatientData.fromMap(Map<String, dynamic> map) {
+    return PatientData(
+      id: map['id'] as String,
+      firstName: map['first_name'] as String,
+      lastName: map['last_name'] as String,
+      email: map['email'] as String,
+      phone: map['phone'] as String,
+      dateOfBirth: map['dob'] as String,
+      gender: map['gender'] as String,
+      medicalId: map['medical_id'] as String,
+      address: map['address'] as String?,
+      emergencyContact: map['emergency_contact'] as String?,
+    );
+  }
+
+  // Convert to Supabase row format
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'phone': phone,
+      'dob': dateOfBirth,
+      'gender': gender,
+      'medical_id': medicalId,
+      'address': address,
+      'emergency_contact': emergencyContact,
+    };
+  }
 }

@@ -20,7 +20,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: const Color(0xFFE0F2F1),
       title: 'Non-Invasive Testing',
       subtitle: 'Quick Hemoglobin Screening',
-      description: 'Get accurate hemoglobin measurements without needles or blood samples. Simply place your finger on the device sensor.',
+      description:
+          'Get accurate hemoglobin measurements without needles or blood samples. Simply place your finger on the device sensor.',
     ),
     OnboardingPage(
       icon: Icons.speed,
@@ -28,7 +29,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: const Color(0xFFE3F2FD),
       title: 'Instant Results',
       subtitle: 'Real-Time Analysis',
-      description: 'Receive immediate results in seconds. Our advanced technology provides clinical-grade accuracy instantly.',
+      description:
+          'Receive immediate results in seconds. Our advanced technology provides clinical-grade accuracy instantly.',
     ),
     OnboardingPage(
       icon: Icons.trending_up,
@@ -36,7 +38,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: const Color(0xFFF3E5F5),
       title: 'Track Your Health',
       subtitle: 'Monitor Over Time',
-      description: 'Keep track of your hemoglobin levels over time. View trends and share results with your healthcare provider.',
+      description:
+          'Keep track of your hemoglobin levels over time. View trends and share results with your healthcare provider.',
     ),
     OnboardingPage(
       icon: Icons.security,
@@ -44,7 +47,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: const Color(0xFFE8F5E8),
       title: 'Secure & Private',
       subtitle: 'Your Data is Protected',
-      description: 'All your health data is encrypted and stored securely. You have full control over your information.',
+      description:
+          'All your health data is encrypted and stored securely. You have full control over your information.',
     ),
   ];
 
@@ -99,7 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                         child: Center(
                           child: Image.asset(
-                            'assets/images/nailysis_logo.png',
+                            'assets/images/nailysis_logo.jpg',
                             width: 24,
                             height: 24,
                             errorBuilder: (context, error, stackTrace) {
@@ -123,7 +127,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ],
                   ),
-                  
+
                   // Skip button
                   TextButton(
                     onPressed: _skipOnboarding,
@@ -138,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
             ),
-            
+
             // PageView
             Expanded(
               child: PageView.builder(
@@ -154,7 +158,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            
+
             // Bottom section
             Padding(
               padding: const EdgeInsets.all(24.0),
@@ -170,17 +174,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         width: _currentPage == index ? 24 : 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: _currentPage == index 
-                              ? AppTheme.primaryTeal 
+                          color: _currentPage == index
+                              ? AppTheme.primaryTeal
                               : Colors.grey[300],
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Action buttons
                   Row(
                     children: [
@@ -202,9 +206,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             child: const Text('Back'),
                           ),
                         ),
-                      
                       if (_currentPage > 0) const SizedBox(width: 16),
-                      
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _nextPage,
@@ -217,8 +219,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           child: Text(
-                            _currentPage == _pages.length - 1 
-                                ? 'Get Started' 
+                            _currentPage == _pages.length - 1
+                                ? 'Get Started'
                                 : 'Next',
                             style: const TextStyle(
                               fontSize: 16,
@@ -258,9 +260,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: page.iconColor,
             ),
           ),
-          
+
           const SizedBox(height: 48),
-          
+
           // Title
           Text(
             page.title,
@@ -271,9 +273,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Subtitle
           Text(
             page.subtitle,
@@ -284,9 +286,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Description
           Text(
             page.description,

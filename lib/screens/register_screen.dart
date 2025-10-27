@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import 'package:Nailysis/providers/patient_provider.dart';
 import 'package:Nailysis/models/patient_data.dart';
 import 'package:Nailysis/theme/app_theme.dart';
+import '../services/supabase_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,7 +22,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+  final _medicalIdController = TextEditingController();
+  // Supabase service instance
+  final SupabaseService _supabase = SupabaseService();
+
   String _selectedGender = 'other';
   DateTime? _selectedDate;
   bool _isLoading = false;
@@ -34,6 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _medicalIdController.dispose();
     super.dispose();
   }
 
@@ -65,24 +70,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      // Simulate registration delay
-      await Future.delayed(const Duration(seconds: 1));
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
 
-      final patient = PatientData(
-        id: const Uuid().v4(),
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        dateOfBirth: _selectedDate!.toIso8601String(),
-        gender: _selectedGender,
-        medicalId: 'NAL${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-      );
+      // Sign up the user - this will automatically create a session
+      final user = await _supabase.signUp(email, password);
 
-      await Provider.of<PatientProvider>(context, listen: false).register(patient);
-      
-      if (mounted) {
-        context.go('/onboarding');
+      if (!mounted) return;
+
+      if (user != null) {
+        final profileRow = {
+          'id': user.id,
+          'first_name': _firstNameController.text.trim(),
+          'last_name': _lastNameController.text.trim(),
+          'email': email,
+          'phone': _phoneController.text.trim(),
+          'dob': _selectedDate!.toIso8601String().split('T').first,
+          'gender': _selectedGender,
+          'medical_id': _medicalIdController.text.trim().isNotEmpty
+              ? _medicalIdController.text.trim()
+              : 'NAL${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+        };
+
+        final upsertRes = await _supabase.upsertProfile(profileRow);
+        if (upsertRes != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registration successful!')),
+          );
+          context.go('/login');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content:
+                    Text('Registration succeeded but saving profile failed')),
+          );
+          context.go('/login');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Registration failed: Unable to create account')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -141,9 +169,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Personal Information
                 Card(
                   child: Padding(
@@ -159,7 +187,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Name fields
                         Row(
                           children: [
@@ -196,9 +224,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Email
                         TextFormField(
                           controller: _emailController,
@@ -212,15 +240,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'Email is required';
                             }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                .hasMatch(value)) {
                               return 'Please enter a valid email';
                             }
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Phone
                         TextFormField(
                           controller: _phoneController,
@@ -237,9 +266,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Date of Birth
                         InkWell(
                           onTap: _selectDate,
@@ -254,14 +283,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
                                   : 'Select your date of birth',
                               style: TextStyle(
-                                color: _selectedDate != null ? null : Colors.grey,
+                                color:
+                                    _selectedDate != null ? null : Colors.grey,
                               ),
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Gender
                         DropdownButtonFormField<String>(
                           value: _selectedGender,
@@ -270,9 +300,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             prefixIcon: Icon(Icons.person_outline),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'male', child: Text('Male')),
-                            DropdownMenuItem(value: 'female', child: Text('Female')),
-                            DropdownMenuItem(value: 'other', child: Text('Other')),
+                            DropdownMenuItem(
+                                value: 'male', child: Text('Male')),
+                            DropdownMenuItem(
+                                value: 'female', child: Text('Female')),
+                            DropdownMenuItem(
+                                value: 'other', child: Text('Other')),
                           ],
                           onChanged: (value) {
                             setState(() {
@@ -284,9 +317,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Account Security
                 Card(
                   child: Padding(
@@ -302,7 +335,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Password
                         TextFormField(
                           controller: _passwordController,
@@ -322,9 +355,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Confirm Password
                         TextFormField(
                           controller: _confirmPasswordController,
@@ -348,9 +381,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Register Button
                 SizedBox(
                   width: double.infinity,
@@ -369,7 +402,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                               strokeWidth: 2,
                             ),
                           )
@@ -382,9 +416,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Login link
                 Center(
                   child: TextButton(

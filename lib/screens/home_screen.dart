@@ -31,7 +31,8 @@ class HomeScreen extends StatelessWidget {
                 Provider.of<PatientProvider>(context, listen: false).logout();
                 context.go('/login');
               },
-              child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+              child:
+                  const Text('Sign Out', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -96,7 +97,8 @@ class HomeScreen extends StatelessWidget {
                                 Row(
                                   children: [
                                     IconButton(
-                                      onPressed: () => context.go('/home/settings'),
+                                      onPressed: () =>
+                                          context.go('/home/settings'),
                                       icon: const Icon(
                                         Icons.settings,
                                         color: Colors.white,
@@ -104,7 +106,8 @@ class HomeScreen extends StatelessWidget {
                                       ),
                                     ),
                                     IconButton(
-                                      onPressed: () => _showLogoutDialog(context),
+                                      onPressed: () =>
+                                          _showLogoutDialog(context),
                                       icon: const Icon(Icons.logout,
                                           color: Colors.white, size: 24),
                                     ),
@@ -270,7 +273,7 @@ class HomeScreen extends StatelessWidget {
                                 ),
                                 child: Center(
                                   child: Image.asset(
-                                    'assets/images/nailysis_logo.png',
+                                    'assets/images/nailysis_logo.jpg',
                                     width: 32,
                                     height: 32,
                                     errorBuilder: (context, error, stackTrace) {
