@@ -9,6 +9,7 @@ import 'package:Nailysis/widgets/patient_profile.dart';
 import 'package:Nailysis/widgets/notification_banner.dart';
 import 'package:Nailysis/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:Nailysis/screens/pi_capture_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -384,6 +385,43 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                        MedicalCard(
+                          onTap: () {
+                            // We will define this new screen in the next step
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const PiCaptureScreen(),
+                              ),
+                            );
+                          },
+                          child: const Column(
+                            children: [
+                              Icon(
+                                Icons.memory, // Icon for Pi/model
+                                color: AppTheme.primaryTeal,
+                                size: 32,
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                'Model Evaluation',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Run Pi camera model',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
 
                       const SizedBox(height: 24),
 

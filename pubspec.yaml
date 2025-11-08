@@ -35,6 +35,7 @@ dependencies:
   http_parser: ^4.0.2
   supabase_flutter: ^2.10.3
   flutter_dotenv: ^6.0.0
+  mjpeg_stream: ^1.0.1 # MJPEG streaming package (supports headers via controller)
 
 dev_dependencies:
   flutter_test:
