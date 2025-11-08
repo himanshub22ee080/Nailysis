@@ -29,7 +29,7 @@ class PiCameraService {
   Future<bool> login(String username, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$_piUrl/api/login'),
+        Uri.parse('$_piUrl/login'),
         body: {'username': username, 'password': password},
       );
       if (response.statusCode == 200) {

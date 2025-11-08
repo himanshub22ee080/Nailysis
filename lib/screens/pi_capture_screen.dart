@@ -1,7 +1,9 @@
+// lib/screens/pi_capture_screen.dart
+
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:Nailysis/services/pi_camera_services.dart';
 
@@ -19,34 +21,36 @@ class _PiCaptureScreenState extends State<PiCaptureScreen> {
   bool _isPiConnected = false;
   String _statusMessage = 'Connecting to Pi...';
 
-  String? _streamUrl;
+  // State variables for manual streaming are back
   http.Client? _httpClient;
   StreamSubscription<List<int>>? _streamSubscription;
   Uint8List? _latestFrame;
   bool _isStreaming = false;
-  int _frameCount = 0;
 
   @override
   void initState() {
     super.initState();
     _piService.login('IITJ', 'BTP2025').then((success) {
-      if (success) {
-        setState(() {
-          _statusMessage = 'Pi Connected. Ready to record.';
-          _isPiConnected = true;
-          _streamUrl = _piService.videoStreamUrl;
+      if (mounted) {
+        if (success) {
+          setState(() {
+            _statusMessage = 'Pi Connected. Streaming preview...';
+            _isPiConnected = true;
+          });
+          // Start the manual stream after successful login
           _startMjpegStream();
-        });
-      } else {
-        setState(() {
-          _statusMessage = 'Pi Login Failed. Check connection.';
-        });
+        } else {
+          setState(() {
+            _statusMessage = 'Pi Login Failed. Check connection.';
+          });
+        }
       }
     });
   }
 
   @override
   void dispose() {
+    // Crucial to stop the stream and prevent memory leaks
     _stopMjpegStream();
     super.dispose();
   }
@@ -56,15 +60,19 @@ class _PiCaptureScreenState extends State<PiCaptureScreen> {
       _isLoading = true;
       _statusMessage = 'Starting...';
     });
+    // Stop the preview stream to free up the camera for high-res recording
+    _stopMjpegStream(); 
+    
     bool success = await _piService.startRecording();
     setState(() {
       _isLoading = false;
       if (success) {
         _isRecording = true;
         _statusMessage = 'Recording! Press Stop to get prediction.';
-        _stopMjpegStream();
       } else {
         _statusMessage = 'Error: Could not start recording.';
+        // If recording fails, restart the preview stream
+        _startMjpegStream(); 
       }
     });
   }
@@ -76,173 +84,158 @@ class _PiCaptureScreenState extends State<PiCaptureScreen> {
     });
     try {
       final prediction = await _piService.stopAndPredict();
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text('Prediction Result'),
-          content: Text(
-            'Hemoglobin: ${prediction['hemoglobin']}\n'
-            'Confidence: ${prediction['confidence']}',
-          ),
-          actions: [
-            TextButton(
-              child: Text('OK'),
-              onPressed: () => Navigator.of(ctx).pop(),
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Prediction Result'),
+            content: Text(
+              'Hemoglobin: ${prediction['hemoglobin']}\n'
+              'Confidence: ${prediction['confidence']}',
             ),
-          ],
-        ),
-      );
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+        );
+      }
       setState(() => _statusMessage = 'Ready');
     } catch (e) {
       setState(() => _statusMessage = 'Error: ${e.toString()}');
     } finally {
-      setState(() {
-        _isLoading = false;
-        _isRecording = false;
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isRecording = false;
+        });
+        // Restart the preview stream after prediction is done
         _startMjpegStream();
+      }
+    }
+  }
+
+  // =========================================================
+  // ✅ ROBUST MANUAL STREAMING IMPLEMENTATION
+  // =========================================================
+
+  void _startMjpegStream() async {
+    if (_isStreaming) return;
+    
+    print('Starting manual MJPEG stream...');
+    _isStreaming = true;
+    _httpClient = http.Client();
+    final request = http.Request('GET', Uri.parse(_piService.videoStreamUrl));
+    if (_piService.sessionCookie != null) {
+      request.headers['cookie'] = _piService.sessionCookie!;
+    }
+
+    try {
+      final response = await _httpClient!.send(request);
+
+      if (response.statusCode != 200) {
+        print('Stream failed with status: ${response.statusCode}');
+        _stopMjpegStream();
+        return;
+      }
+      
+      // Get the boundary string from the content-type header
+      final contentType = response.headers['content-type'] ?? '';
+      final boundary = contentType.contains('boundary=')
+          ? contentType.split('boundary=')[1]
+          : 'frame';
+      final boundaryBytes = utf8.encode('--$boundary');
+      
+      List<int> buffer = []; // <-- THIS IS THE PERSISTENT BUFFER
+
+      _streamSubscription = response.stream.listen(
+        (chunk) {
+          // Add incoming data to the buffer
+          buffer.addAll(chunk);
+
+          // Continuously search for frames in the buffer
+          while (true) {
+            // Find the start and end of a frame using the boundary markers
+            final start = _indexOfSequence(buffer, boundaryBytes, 0);
+            if (start == -1) break; // Not enough data for a start boundary
+
+            final end = _indexOfSequence(buffer, boundaryBytes, start + boundaryBytes.length);
+            if (end == -1) break; // Not enough data for a full frame yet
+
+            // Extract the block containing one frame's data
+            final frameBlock = buffer.sublist(start + boundaryBytes.length, end);
+            
+            // Find the actual JPEG image data (SOI and EOI markers) within the block
+            final soi = _indexOfSequence(frameBlock, [0xFF, 0xD8], 0);
+            if (soi != -1) {
+              final eoi = _indexOfSequence(frameBlock, [0xFF, 0xD9], soi);
+              if (eoi != -1) {
+                final frame = frameBlock.sublist(soi, eoi + 2);
+                if(mounted) {
+                  setState(() {
+                    _latestFrame = Uint8List.fromList(frame);
+                  });
+                }
+              }
+            }
+
+            // Remove the processed frame from the buffer to prepare for the next one
+            buffer = buffer.sublist(end);
+          }
+        },
+        onDone: () {
+          print('MJPEG stream closed');
+          _stopMjpegStream();
+        },
+        onError: (error) {
+          print('MJPEG stream error: $error');
+          _stopMjpegStream();
+        },
+        cancelOnError: true,
+      );
+    } catch (e) {
+      print('Error starting MJPEG stream: $e');
+      _stopMjpegStream();
+    }
+  }
+
+  void _stopMjpegStream() {
+    if (!_isStreaming) return;
+    print('Stopping manual MJPEG stream...');
+    _isStreaming = false;
+    _streamSubscription?.cancel();
+    _streamSubscription = null;
+    _httpClient?.close();
+    _httpClient = null;
+    if (mounted) {
+      setState(() {
+        _latestFrame = null;
       });
     }
   }
 
-  // ==============================
-  // 📷 START MJPEG STREAM (patched)
-  // ==============================
-  void _startMjpegStream() async {
-    if (_isStreaming || _streamUrl == null) return;
-
-    _httpClient = http.Client();
-    final req = http.Request('GET', Uri.parse(_streamUrl!));
-
-    if (_piService.sessionCookie != null) {
-      req.headers['cookie'] = _piService.sessionCookie!;
-    }
-
-    print('Fetching MJPEG from $_streamUrl with cookie: ${_piService.sessionCookie}');
-    
-    http.StreamedResponse? resp;
-    try {
-      resp = await _httpClient!.send(req).timeout(const Duration(seconds: 10));
-    } catch (e) {
-      print('MJPEG connection error: $e');
-      setState(() => _statusMessage = 'Preview connection error: $e');
-      _httpClient?.close();
-      _httpClient = null;
-      return;
-    }
-
-if (resp!.statusCode != 200) {
-  final snippet = await resp.stream.transform(utf8.decoder).join();
-  print('Stream failed (${resp.statusCode}): $snippet');
-  setState(() => _statusMessage = 'Stream failed (${resp!.statusCode})');
-  _httpClient?.close();
-  _httpClient = null;
-  return;
-}
-
-    print('✅ MJPEG stream connected');
-    print('Response headers: ${resp.headers}');
-    setState(() => _statusMessage = 'Streaming preview...');
-    _isStreaming = true;
-
-    final ct = resp.headers['content-type'];
-    final boundary = ct != null && ct.contains('boundary=')
-        ? ct.split('boundary=')[1]
-        : 'frame';
-    print('Detected boundary: $boundary');
-    final boundaryBytes = utf8.encode('--$boundary');
-
-    List<int> buffer = [];
-
-    _streamSubscription = resp.stream.listen((chunk) {
-      print('Received chunk of size: ${chunk.length}');
-      buffer.addAll(chunk);
-
-      // check if JPEG markers exist in chunk (for debugging)
-      if (chunk.contains(0xFF) && chunk.contains(0xD8)) {
-        print('Chunk contains JPEG start marker!');
-      }
-
-      bool foundFrame = false;
-
-      while (true) {
-        final start = _indexOfSequence(buffer, boundaryBytes, 0);
-        if (start < 0) break;
-
-        final next =
-            _indexOfSequence(buffer, boundaryBytes, start + boundaryBytes.length);
-        if (next < 0) break;
-
-        final frameBlock = buffer.sublist(start + boundaryBytes.length, next);
-        buffer = buffer.sublist(next);
-
-        final soi = _indexOfSequence(frameBlock, [0xFF, 0xD8], 0);
-        final eoi = _indexOfSequence(frameBlock, [0xFF, 0xD9], soi + 2);
-        if (soi >= 0 && eoi > soi) {
-          final frame = frameBlock.sublist(soi, eoi + 2);
-          _latestFrame = Uint8List.fromList(frame);
-          _frameCount++;
-          foundFrame = true;
-          if ((_frameCount % 10) == 0) {
-            print('✅ Frames received: $_frameCount');
-          }
-          if (mounted) setState(() {});
-        } else {
-          print('⚠️ Frame block had no JPEG markers.');
-        }
-      }
-
-      // fallback if no boundary found but JPEG exists
-      if (!foundFrame) {
-        final soi = _indexOfSequence(buffer, [0xFF, 0xD8], 0);
-        final eoi = _indexOfSequence(buffer, [0xFF, 0xD9], soi + 2);
-        if (soi >= 0 && eoi > soi) {
-          final frame = buffer.sublist(soi, eoi + 2);
-          buffer = buffer.sublist(eoi + 2);
-          _latestFrame = Uint8List.fromList(frame);
-          _frameCount++;
-          print('✅ Fallback frame parsed (#$_frameCount)');
-          if (mounted) setState(() {});
-        }
-      }
-    }, onDone: () {
-      print('MJPEG stream closed');
-      _isStreaming = false;
-      _httpClient?.close();
-      _httpClient = null;
-    }, onError: (e) {
-      print('Stream error: $e');
-      _isStreaming = false;
-      _httpClient?.close();
-      _httpClient = null;
-    }, cancelOnError: true);
-  }
-
-  void _stopMjpegStream() {
-    _streamSubscription?.cancel();
-    _streamSubscription = null;
-    try {
-      _httpClient?.close();
-    } catch (_) {}
-    _httpClient = null;
-    _isStreaming = false;
-  }
-
-  // helper to find a byte sequence
+  // Helper function to find a sequence of bytes in a list
   int _indexOfSequence(List<int> data, List<int> seq, int start) {
-    final sl = seq.length;
-    final limit = data.length - sl + 1;
+    if (seq.isEmpty) return -1;
+    final limit = data.length - seq.length + 1;
     for (var i = start; i < limit; i++) {
-      var ok = true;
-      for (var j = 0; j < sl; j++) {
+      var found = true;
+      for (var j = 0; j < seq.length; j++) {
         if (data[i + j] != seq[j]) {
-          ok = false;
+          found = false;
           break;
         }
       }
-      if (ok) return i;
+      if (found) return i;
     }
     return -1;
   }
+  
+  // =========================================================
+  // END OF STREAMING IMPLEMENTATION
+  // =========================================================
 
   @override
   Widget build(BuildContext context) {
@@ -264,13 +257,26 @@ if (resp!.statusCode != 200) {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
+                  // This widget will now be updated correctly by the new parser
                   child: _latestFrame != null
                       ? Image.memory(
                           _latestFrame!,
                           fit: BoxFit.contain,
-                          gaplessPlayback: true,
+                          gaplessPlayback: true, // Prevents flickering
                         )
-                      : const Center(child: CircularProgressIndicator()),
+                      : const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 8),
+                              Text(
+                                'Connecting to stream...',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
                 ),
               ),
             Text(_statusMessage, textAlign: TextAlign.center),
@@ -279,7 +285,7 @@ if (resp!.statusCode != 200) {
             const SizedBox(height: 20),
             if (!_isRecording)
               ElevatedButton(
-                onPressed: _isLoading ? null : _onStart,
+                onPressed: _isLoading || !_isPiConnected ? null : _onStart,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 child: const Text('Start Recording'),
               ),
