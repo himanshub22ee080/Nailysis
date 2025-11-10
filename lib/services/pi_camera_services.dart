@@ -5,6 +5,7 @@ class PiCameraService {
   final String _piUrl = 'http://192.168.137.131:5000';
   String? _sessionCookie;
 
+
   // ✅ --- ADD THIS GETTER ---
   /// Returns the session cookie needed for authenticated requests.
   String? get sessionCookie => _sessionCookie;
